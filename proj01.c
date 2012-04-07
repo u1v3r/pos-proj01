@@ -54,18 +54,23 @@ int main(void)
     /* parrent process */
     if(pid > 0){
         while (1){
-            if(reset) {
-                sigprocmask(SIG_BLOCK, &sigusr2_set,NULL);
-                char_num = ABC_START;
-                reset = 0;
-                signaled = 1;/* pokracuj na getchar() */
-                sigprocmask(SIG_UNBLOCK, &sigusr2_set,NULL);
-            }else{
+
+            if(!reset){
                 if(char_num == ABC_END) char_num = ABC_START;
-                printf("Parent (%d): '%c'\n",ppid,char_num++);
+                printf("Parent (%i): '%c'\n",(int)ppid,char_num++);
                 kill(pid, SIGUSR1);
                 printf("Press enter...");
             }
+
+            sigprocmask(SIG_BLOCK, &sigusr2_set,NULL);
+            if(reset) {
+                char_num = ABC_START;
+                reset = 0;
+                signaled = 1;/* pokracuj na getchar() */
+            }
+            sigprocmask(SIG_UNBLOCK, &sigusr2_set,NULL);
+
+
             /* pockaj na singal USR1 a blokuj USR2 */
             if(!signaled) sigsuspend(&sigusr2_set);
             signaled = 0;
@@ -85,15 +90,15 @@ int main(void)
             if(!signaled) sigsuspend(&sigusr2_set);
             signaled = 0;
 
+            sigprocmask(SIG_BLOCK, &sigusr2_set,NULL);
             if(reset){
-                sigprocmask(SIG_BLOCK, &sigusr2_set,NULL);
                 reset = 0;
                 char_num = ABC_START;
-                sigprocmask(SIG_UNBLOCK, &sigusr2_set,NULL);
             }
+            sigprocmask(SIG_UNBLOCK, &sigusr2_set,NULL);
 
             if(char_num == ABC_END) char_num = ABC_START;
-            printf("Child (%d): '%c'\n",getpid(),char_num++);
+            printf("Child  (%i): '%c'\n",(int)getpid(),char_num++);
             kill(ppid, SIGUSR1);
         }
     }
